@@ -14,7 +14,7 @@ too the flask framework, which will handle the database actions."""
 from app import db
 
 
-class model(db.Model):
+class Model(db.Model):
     __tablename__ = 'Model'
 
     ID = db.Column(db.Integer, primary_key=True, index=True)
@@ -42,8 +42,8 @@ class model(db.Model):
         }
 
 
-class veiwPoint(db.Model):
-    __tablename__ = 'veiwPoint'
+class VeiwPoint(db.Model):
+    __tablename__ = 'VeiwPoint'
 
     ID = db.Column(db.Integer, primary_key=True, index=True)
     lat = db.Column(db.Float)
