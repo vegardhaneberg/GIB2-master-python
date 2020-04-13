@@ -61,7 +61,7 @@ class VeiwPoint(db.Model):
     def serialize(self):
         return {
             'ID': self.ID,
-            'title': self.title,
             'lat': self.lat,
-            'long': self.long
+            'long': self.long,
+            'date': self.date
         }
