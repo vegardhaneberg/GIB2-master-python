@@ -5,14 +5,16 @@
  *There are ways of linking HTML files directly in text on other HTML files, but this is not recomended practice in
  flask """
 
-from flask import render_template
+from flask import render_template, request, url_for
 from app import app
 
+UPLOAD_FOLDER = ''
 
 @app.route('/')
-#@app.route('/index')
 def index():
     return "Hello, World!"
 
 
-
+@app.route('/uploadImage', methods=['POST'])
+def upload_image():
+    pass
