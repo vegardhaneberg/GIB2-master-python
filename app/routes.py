@@ -5,8 +5,9 @@
  *There are ways of linking HTML files directly in text on other HTML files, but this is not recomended practice in
  flask """
 
-from flask import render_template, request, url_for
-from app import app
+from flask import render_template, request, jsonify
+from app import app, db
+from app.models import VeiwPoint
 
 UPLOAD_FOLDER = ''
 
@@ -14,7 +15,50 @@ UPLOAD_FOLDER = ''
 def index():
     return "Hello, World!"
 
+@app.route('/create')
+def create():
+    return render_template('create.html')
 
-@app.route('/uploadImage', methods=['POST'])
+
+@app.route('/finish', methods=['POST'])
+def finish():
+    lat = request.form['lat']
+    long = request.form['long']
+    title = request.form['title']
+
+    vp = VeiwPoint(title=title, lat=lat, long=long)
+
+    db.session.add(vp)
+    db.session.commit()
+
+    return "Done"
+
+
+""""@app.route('/<title>', methods=['DELETE', 'GET'])
+def delete(title):
+    vp = VeiwPoint.query.filter_by(title=title).first()
+
+    db.session.delete(vp)
+    db.session.commit()
+    return "Deleted"""
+
+
+@app.route('/viewPoints', methods=['GET'])
 def upload_image():
-    pass
+    viewPoints = VeiwPoint.query.all()
+
+    for vp in viewPoints:
+        print(vp.title)
+
+    return jsonify(vps=viewPoints.serialize())
+
+
+@app.route('/get', methods=['GET'])
+def get():
+    vp = VeiwPoint.query.filter_by(title='Nidarosdomen').first()
+
+    return jsonify(title=vp.title,
+                   lat=vp.lat,
+                   long=vp.long)
+
+

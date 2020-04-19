@@ -46,12 +46,14 @@ class VeiwPoint(db.Model):
     __tablename__ = 'VeiwPoint'
 
     ID = db.Column(db.Integer, primary_key=True, index=True)
+    title = db.Column(db.String)
     lat = db.Column(db.Float)
     long = db.Column(db.Float)
     date = db.Column(db.TIMESTAMP)
     image_name = db.Column(db.String)
 
-    def __init__(self, lat, long, date, image_name):
+    def __init__(self, title, lat, long, date=None, image_name=None):
+        self.title = title
         self.lat = lat
         self.long = long
         self.date = date
@@ -63,6 +65,7 @@ class VeiwPoint(db.Model):
     def serialize(self):
         return {
             'ID': self.ID,
+            'title': self.title,
             'lat': self.lat,
             'long': self.long,
             'date': self.date,
