@@ -8,6 +8,7 @@
 from flask import render_template, request, jsonify
 from app import app, db
 from app.models import ViewPoint
+from geopy.distance import vincenty
 
 UPLOAD_FOLDER = ''
 
@@ -48,9 +49,6 @@ def delete(title):
 def post():
     data = request.get_json()
 
-    print(type(data))
-    print(data)
-
     title = data["title"]
     lat = float(data["latitude"])
     long = float(data["longitude"])
@@ -70,13 +68,27 @@ def upload_image():
     return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), viewPoints))})
 
 
-@app.route('/get', methods=['GET'])
-def get():
-    vp = ViewPoint.query.filter_by(title='Nidarosdomen').first()
+@app.route('/filterViewPoints', methods=['GET'])
+def filterViewPionts():
+    data = request.get_json()
 
-    return jsonify(title=vp.title,
-                   lat=vp.lat,
-                   long=vp.long,
-                   )
+    radius = float(data["radius"])
+    lat = float(data["latitude"])
+    long = float(data["longitude"])
+
+    currentCoordinate = (lat, long)
+    viewPoints = ViewPoint.query.all()
+    validViewPoints = []
+
+    for vp in viewPoints:
+        coordinateVP = (vp.lat, vp.long)
+
+        if vincenty(currentCoordinate, coordinateVP).m <= radius:
+            validViewPoints.append(vp)
+    if len(validViewPoints) == 0:
+        return{'completed': False}
+
+    return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), validViewPoints))})
+
 
 
