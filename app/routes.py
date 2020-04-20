@@ -7,13 +7,15 @@
 
 from flask import render_template, request, jsonify
 from app import app, db
-from app.models import VeiwPoint
+from app.models import ViewPoint
 
 UPLOAD_FOLDER = ''
+
 
 @app.route('/')
 def index():
     return "Hello, World!"
+
 
 @app.route('/create')
 def create():
@@ -26,7 +28,7 @@ def finish():
     long = request.form['long']
     title = request.form['title']
 
-    vp = VeiwPoint(title=title, lat=lat, long=long)
+    vp = ViewPoint(title=title, lat=lat, long=long)
 
     db.session.add(vp)
     db.session.commit()
@@ -34,31 +36,47 @@ def finish():
     return "Done"
 
 
-""""@app.route('/<title>', methods=['DELETE', 'GET'])
+@app.route('/<title>', methods=['DELETE', 'GET'])
 def delete(title):
-    vp = VeiwPoint.query.filter_by(title=title).first()
-
+    vp = db.session.query(ViewPoint).filter(ViewPoint.title == title).first()
     db.session.delete(vp)
     db.session.commit()
-    return "Deleted"""
+    return "Deleted"
+
+
+@app.route('/postjson', methods=['POST'])
+def post():
+    data = request.get_json()
+
+    print(type(data))
+    print(data)
+
+    title = data["title"]
+    lat = float(data["latitude"])
+    long = float(data["longitude"])
+
+    spot = ViewPoint(title=title, lat=lat, long=long)
+
+    db.session.add(spot)
+    db.session.commit()
+
+    return jsonify({'completed': True})
 
 
 @app.route('/viewPoints', methods=['GET'])
 def upload_image():
-    viewPoints = VeiwPoint.query.all()
+    viewPoints = ViewPoint.query.all()
 
-    for vp in viewPoints:
-        print(vp.title)
-
-    return jsonify(vps=viewPoints.serialize())
+    return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), viewPoints))})
 
 
 @app.route('/get', methods=['GET'])
 def get():
-    vp = VeiwPoint.query.filter_by(title='Nidarosdomen').first()
+    vp = ViewPoint.query.filter_by(title='Nidarosdomen').first()
 
     return jsonify(title=vp.title,
                    lat=vp.lat,
-                   long=vp.long)
+                   long=vp.long,
+                   )
 
 

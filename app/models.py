@@ -42,8 +42,8 @@ class Model(db.Model):
         }
 
 
-class VeiwPoint(db.Model):
-    __tablename__ = 'VeiwPoint'
+class ViewPoint(db.Model):
+    __tablename__ = 'ViewPoint'
 
     ID = db.Column(db.Integer, primary_key=True, index=True)
     title = db.Column(db.String)
