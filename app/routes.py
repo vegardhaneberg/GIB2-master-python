@@ -47,6 +47,10 @@ def delete(title):
 
 @app.route('/postjson', methods=['POST'])
 def post():
+    """
+    Function for inserting a new view point to the database
+    :return: A json object telling the front-end that it was a sucsess
+    """
     data = request.get_json()
 
     title = data["title"]
@@ -63,6 +67,10 @@ def post():
 
 @app.route('/viewPoints', methods=['GET'])
 def upload_image():
+    """
+    Function for getting all view points in the database
+    :return: a json object with all the view points
+    """
     viewPoints = ViewPoint.query.all()
 
     return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), viewPoints))})
@@ -70,6 +78,10 @@ def upload_image():
 
 @app.route('/filterViewPoints', methods=['GET'])
 def filterViewPionts():
+    """
+    Function for getting all view points within a custom radius from yourself
+    :return: a json object with all the view points within the distance
+    """
     data = request.get_json()
 
     radius = float(data["radius"])
@@ -89,6 +101,3 @@ def filterViewPionts():
         return{'completed': False}
 
     return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), validViewPoints))})
-
-
-
