@@ -10,10 +10,8 @@ from app import app, db
 from app.models import ViewPoint
 from geopy.distance import vincenty
 
-UPLOAD_FOLDER = ''
 
-
-@app.route('/')
+@app.route('/hei')
 def index():
     return "Hello, World!"
 
@@ -37,9 +35,9 @@ def finish():
     return "Done"
 
 
-@app.route('/<title>', methods=['DELETE', 'GET'])
-def delete(title):
-    vp = db.session.query(ViewPoint).filter(ViewPoint.title == title).first()
+@app.route('/', methods=['DELETE', 'GET'])
+def delete():
+    vp = db.session.query(ViewPoint).filter(ViewPoint.title == "Jlø").first()
     db.session.delete(vp)
     db.session.commit()
     return "Deleted"
@@ -51,18 +49,35 @@ def post():
     Function for inserting a new view point to the database
     :return: A json object telling the front-end that it was a sucsess
     """
+    print("funker0")
     data = request.get_json()
+    print("funker 1")
 
-    title = data["title"]
-    lat = float(data["latitude"])
-    long = float(data["longitude"])
+    try:
+        print("funker2")
+        title = data["title"]
+        lat = float(data["latitude"])
+        long = float(data["longitude"])
 
-    spot = ViewPoint(title=title, lat=lat, long=long)
+        if data['image']:
+            print("funker hittil")
+            image = data["image"]
+            print(image)
+            #save_image(image, title)
+            print(len(image))
+        else:
+            image = None
 
-    db.session.add(spot)
-    db.session.commit()
+        spot = ViewPoint(title=title, lat=lat, long=long, image=image)
 
-    return jsonify({'completed': True})
+        db.session.add(spot)
+        db.session.commit()
+        print("veiw point added to database")
+
+        return jsonify({'completed': True})
+
+    except:
+        return jsonify({'completed': False})
 
 
 @app.route('/viewPoints', methods=['GET'])
@@ -74,6 +89,17 @@ def upload_image():
     viewPoints = ViewPoint.query.all()
 
     return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), viewPoints))})
+
+
+@app.route('/getViewPoint', methods=['POST'])
+def getViewPoint():
+
+    data = request.get_json()
+    title = data["title"]
+
+    vp = db.session.query(ViewPoint).filter(ViewPoint.title == title).first()
+
+    return jsonify({"image": vp.image})
 
 
 @app.route('/filterViewPoints', methods=['GET'])
@@ -97,7 +123,79 @@ def filterViewPionts():
 
         if vincenty(currentCoordinate, coordinateVP).m <= radius:
             validViewPoints.append(vp)
+
     if len(validViewPoints) == 0:
-        return{'completed': False}
+        return jsonify({'completed': False})
 
     return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), validViewPoints))})
+
+
+@app.route('/clusterViewPoints', methods=['GET'])
+def clusterViewPoints():
+    """
+    Function that gets several View Points that are close to each other
+    :return: a json object containing the view points that are close to each other
+    """
+
+    data = request.get_json()
+
+    radius = float(data["radius"])
+    lat = float(data["latitude"])
+    long = float(data["longitude"])
+    distance = float(data["distance"])
+
+    currentCoordinate = (lat, long)
+    viewPoints = ViewPoint.query.all()
+
+    validViewPoints = []
+
+    for vp in viewPoints:
+        coordinateVP = (vp.lat, vp.long)
+
+        if vincenty(currentCoordinate, coordinateVP).m <= radius + distance:
+            validViewPoints.append(vp)
+
+    if len(validViewPoints) == 0:
+        return jsonify({'completed': False})
+
+    bestSpot = None
+    neighbours = []
+
+    for spot in validViewPoints:
+        closeSpots = []
+        coordinateSpot = (spot.lat, spot.long)
+        for n in validViewPoints:
+
+            coordinateN = (n.lat, n.long)
+            if spot.ID != n.ID and vincenty(coordinateSpot, coordinateN).m < distance:
+                print(spot.title)
+                print(n.title)
+                print(vincenty(coordinateSpot, coordinateN).m)
+                print(coordinateSpot)
+                print(coordinateN)
+                print("-----------------------------")
+                closeSpots.append(n)
+        if len(closeSpots) >= len(neighbours):
+            neighbours = closeSpots
+            bestSpot = spot
+    neighbours.append(bestSpot)
+
+    return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), neighbours))})
+
+
+@app.route('/distance', methods=['GET'])
+def dist():
+    viewPoints = ViewPoint.query.all()
+
+    for vp in viewPoints:
+        cooVP = (vp.lat, vp.long)
+        for s in viewPoints:
+            cooS = (s.lat, s.long)
+            if s!=vp:
+                print(vp.title)
+                print(s.title)
+                print(vincenty(cooS, cooVP).m)
+                print("----------------------")
+
+    return "hello"
+

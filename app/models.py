@@ -50,14 +50,14 @@ class ViewPoint(db.Model):
     lat = db.Column(db.Float)
     long = db.Column(db.Float)
     date = db.Column(db.TIMESTAMP)
-    image_name = db.Column(db.String)
+    image = db.Column(db.String)
 
-    def __init__(self, title, lat, long, date=None, image_name=None):
+    def __init__(self, title, lat, long, date=None, image=None):
         self.title = title
         self.lat = lat
         self.long = long
         self.date = date
-        self.image_name = image_name
+        self.image = image
 
     def __repr__(self):
         return '<ID {}>'.format(self.ID)
@@ -69,5 +69,5 @@ class ViewPoint(db.Model):
             'lat': self.lat,
             'long': self.long,
             'date': self.date,
-            'image_name': self.image_name
+            'image_name': self.image
         }
