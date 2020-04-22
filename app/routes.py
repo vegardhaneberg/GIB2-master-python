@@ -11,11 +11,6 @@ from app.models import ViewPoint
 from geopy.distance import vincenty
 
 
-@app.route('/hei')
-def index():
-    return "Hello, World!"
-
-
 @app.route('/create')
 def create():
     return render_template('create.html')
@@ -35,12 +30,34 @@ def finish():
     return "Done"
 
 
-@app.route('/', methods=['DELETE', 'GET'])
+@app.route('/delete', methods=['DELETE', 'GET'])
 def delete():
-    vp = db.session.query(ViewPoint).filter(ViewPoint.title == "Jlø").first()
-    db.session.delete(vp)
-    db.session.commit()
-    return "Deleted"
+    vp = db.session.query(ViewPoint).filter(ViewPoint.title == "StuatilHaneberg").first()
+    if type(vp) is ViewPoint:
+        db.session.delete(vp)
+        db.session.commit()
+        return "Deleted"
+    return "Could not find the view point in the database"
+
+
+@app.route('/changeRating', methods=['GET'])
+def changeRating():
+    data = request.get_json()
+
+    id = data["id"]
+    rating = int(data['rating'])
+
+    vp = db.session.query(ViewPoint).filter(ViewPoint.ID == id).first()
+
+    if type(vp) is ViewPoint:
+        numberOfRatings = vp.numberOfRatings + 1
+        newRating = (vp.rating + rating)/numberOfRatings
+        vp.numberOfRatings = numberOfRatings
+        vp.rating = newRating
+        db.session.commit()
+        return jsonify({'rating': newRating})
+
+    return jsonify({'completed': False})
 
 
 @app.route('/postjson', methods=['POST'])
@@ -49,21 +66,16 @@ def post():
     Function for inserting a new view point to the database
     :return: A json object telling the front-end that it was a sucsess
     """
-    print("funker0")
+
     data = request.get_json()
-    print("funker 1")
 
     try:
-        print("funker2")
         title = data["title"]
         lat = float(data["latitude"])
         long = float(data["longitude"])
 
         if data['image']:
-            print("funker hittil")
             image = data["image"]
-            print(image)
-            #save_image(image, title)
             print(len(image))
         else:
             image = None
@@ -96,10 +108,12 @@ def getViewPoint():
 
     data = request.get_json()
     title = data["title"]
-
     vp = db.session.query(ViewPoint).filter(ViewPoint.title == title).first()
 
-    return jsonify({"image": vp.image})
+    if type(vp) is ViewPoint:
+        return jsonify({"image": vp.image})
+
+    return jsonify({"completed": False})
 
 
 @app.route('/filterViewPoints', methods=['GET'])
@@ -168,12 +182,6 @@ def clusterViewPoints():
 
             coordinateN = (n.lat, n.long)
             if spot.ID != n.ID and vincenty(coordinateSpot, coordinateN).m < distance:
-                print(spot.title)
-                print(n.title)
-                print(vincenty(coordinateSpot, coordinateN).m)
-                print(coordinateSpot)
-                print(coordinateN)
-                print("-----------------------------")
                 closeSpots.append(n)
         if len(closeSpots) >= len(neighbours):
             neighbours = closeSpots

@@ -50,7 +50,9 @@ class ViewPoint(db.Model):
     lat = db.Column(db.Float)
     long = db.Column(db.Float)
     date = db.Column(db.TIMESTAMP)
+    rating = db.Column(db.Float)
     image = db.Column(db.String)
+    numberOfRatings = db.Column(db.Integer)
 
     def __init__(self, title, lat, long, date=None, image=None):
         self.title = title
@@ -58,6 +60,8 @@ class ViewPoint(db.Model):
         self.long = long
         self.date = date
         self.image = image
+        self.rating = 0
+        self.numberOfRatings = 0
 
     def __repr__(self):
         return '<ID {}>'.format(self.ID)
@@ -69,5 +73,7 @@ class ViewPoint(db.Model):
             'lat': self.lat,
             'long': self.long,
             'date': self.date,
-            'image_name': self.image
+            'image_name': self.image,
+            'rating': self.rating,
+            'numberOfRatings': self.numberOfRatings
         }
