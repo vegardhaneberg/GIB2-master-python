@@ -69,27 +69,30 @@ def post():
 
     data = request.get_json()
 
-    try:
-        title = data["title"]
-        lat = float(data["latitude"])
-        long = float(data["longitude"])
 
-        if data['image']:
-            image = data["image"]
-            print(len(image))
-        else:
-            image = None
+    title = data["title"]
+    latTest = data['latitude']
+    print(latTest)
+    print(type(latTest))
+    """lat = float(data["latitude"])
+    long = float(data["longitude"])
 
-        spot = ViewPoint(title=title, lat=lat, long=long, image=image)
+    if data['image']:
+        image = data["image"]
+        print(len(image))
+    else:
+        image = None
 
-        db.session.add(spot)
-        db.session.commit()
-        print("veiw point added to database")
+    spot = ViewPoint(title=title, lat=lat, long=long, image=image)
 
-        return jsonify({'completed': True})
+    db.session.add(spot)
+    db.session.commit()
+    print("veiw point added to database")"""
 
-    except:
-        return jsonify({'completed': False})
+    return jsonify({'completed': True})
+
+
+    #return jsonify({'completed': False})
 
 
 @app.route('/viewPoints', methods=['GET'])
