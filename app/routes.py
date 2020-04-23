@@ -74,7 +74,7 @@ def post():
     latTest = data['latitude']
     print(latTest)
     print(type(latTest))
-    """lat = float(data["latitude"])
+    lat = float(data["latitude"])
     long = float(data["longitude"])
 
     if data['image']:
@@ -87,12 +87,12 @@ def post():
 
     db.session.add(spot)
     db.session.commit()
-    print("veiw point added to database")"""
+    print("veiw point added to database")
 
     return jsonify({'completed': True})
 
 
-    #return jsonify({'completed': False})
+
 
 
 @app.route('/viewPoints', methods=['GET'])
