@@ -7,8 +7,9 @@
 
 from flask import render_template, request, jsonify
 from app import app, db
-from app.models import ViewPoint
+from app.models import ViewPoint, ViewPointInfo
 from geopy.distance import vincenty
+import base64
 
 
 @app.route('/create')
@@ -21,8 +22,9 @@ def finish():
     lat = request.form['lat']
     long = request.form['long']
     title = request.form['title']
+    viewPointType = request.form['type']
 
-    vp = ViewPoint(title=title, lat=lat, long=long)
+    vp = ViewPoint(title=title, lat=lat, long=long, type=viewPointType)
 
     db.session.add(vp)
     db.session.commit()
@@ -30,9 +32,15 @@ def finish():
     return "Done"
 
 
+@app.route('/deleteAll', methods=['DELETE'])
+def deleteAll():
+    i = db.session.query(ViewPoint).delete()
+    db.session.commit()
+    return str(i)
+
 @app.route('/delete', methods=['DELETE', 'GET'])
 def delete():
-    vp = db.session.query(ViewPoint).filter(ViewPoint.title == "StuatilHaneberg").first()
+    vp = db.session.query(ViewPoint).filter(ViewPoint.ID == 70).first()
     if type(vp) is ViewPoint:
         db.session.delete(vp)
         db.session.commit()
@@ -40,7 +48,7 @@ def delete():
     return "Could not find the view point in the database"
 
 
-@app.route('/changeRating', methods=['GET'])
+@app.route('/changeRating', methods=['PUT'])
 def changeRating():
     data = request.get_json()
 
@@ -51,17 +59,21 @@ def changeRating():
 
     if type(vp) is ViewPoint:
         numberOfRatings = vp.numberOfRatings + 1
-        newRating = (vp.rating + rating)/numberOfRatings
+        newRating = (vp.rating * (numberOfRatings-1) + rating)/numberOfRatings
         vp.numberOfRatings = numberOfRatings
         vp.rating = newRating
         db.session.commit()
-        return jsonify({'rating': newRating})
+        vp.rating = int(round(vp.rating, 0))
+        return jsonify({
+            'rating': vp.rating,
+            'numberOfRatings': vp.numberOfRatings
+        })
 
     return jsonify({'completed': False})
 
 
 @app.route('/postjson', methods=['POST'])
-def post():
+def postjson():
     """
     Function for inserting a new view point to the database
     :return: A json object telling the front-end that it was a sucsess
@@ -71,28 +83,21 @@ def post():
 
 
     title = data["title"]
-    latTest = data['latitude']
-    print(latTest)
-    print(type(latTest))
     lat = float(data["latitude"])
     long = float(data["longitude"])
+    viewPointType = data['type']
 
     if data['image']:
         image = data["image"]
-        print(len(image))
     else:
         image = None
 
-    spot = ViewPoint(title=title, lat=lat, long=long, image=image)
+    spot = ViewPoint(title=title, lat=lat, long=long, image=image, type=viewPointType)
 
     db.session.add(spot)
     db.session.commit()
-    print("veiw point added to database")
 
     return jsonify({'completed': True})
-
-
-
 
 
 @app.route('/viewPoints', methods=['GET'])
@@ -103,6 +108,12 @@ def upload_image():
     """
     viewPoints = ViewPoint.query.all()
 
+    for vp in viewPoints:
+        if vp.rating is not None:
+            vp.rating = int(round(vp.rating, 0))
+        else:
+            vp.rating = 0
+
     return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), viewPoints))})
 
 
@@ -110,11 +121,12 @@ def upload_image():
 def getViewPoint():
 
     data = request.get_json()
-    title = data["title"]
-    vp = db.session.query(ViewPoint).filter(ViewPoint.title == title).first()
+    id = int(data['id'])
+    vp = db.session.query(ViewPoint).filter(ViewPoint.ID == id).first()
 
     if type(vp) is ViewPoint:
-        return jsonify({"image": vp.image})
+        vp.rating = int(round(vp.rating, 0))
+        return jsonify(vp.serialize())
 
     return jsonify({"completed": False})
 
@@ -147,7 +159,7 @@ def filterViewPionts():
     return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), validViewPoints))})
 
 
-@app.route('/clusterViewPoints', methods=['GET'])
+@app.route('/clusterViewPoints', methods=['POST'])
 def clusterViewPoints():
     """
     Function that gets several View Points that are close to each other
@@ -161,6 +173,8 @@ def clusterViewPoints():
     long = float(data["longitude"])
     distance = float(data["distance"])
 
+    type = data['type']
+
     currentCoordinate = (lat, long)
     viewPoints = ViewPoint.query.all()
 
@@ -168,12 +182,15 @@ def clusterViewPoints():
 
     for vp in viewPoints:
         coordinateVP = (vp.lat, vp.long)
-
-        if vincenty(currentCoordinate, coordinateVP).m <= radius + distance:
-            validViewPoints.append(vp)
+        if type == "Godt og blandet":
+            if vincenty(currentCoordinate, coordinateVP).km <= radius + distance:
+                validViewPoints.append(vp)
+        else:
+            if vincenty(currentCoordinate, coordinateVP).km <= radius + distance and type == vp.type:
+                validViewPoints.append(vp)
 
     if len(validViewPoints) == 0:
-        return jsonify({'completed': False})
+        return jsonify({'viewPoints': False})
 
     bestSpot = None
     neighbours = []
@@ -184,14 +201,20 @@ def clusterViewPoints():
         for n in validViewPoints:
 
             coordinateN = (n.lat, n.long)
-            if spot.ID != n.ID and vincenty(coordinateSpot, coordinateN).m < distance:
+            if spot.ID != n.ID and vincenty(coordinateSpot, coordinateN).km < distance:
                 closeSpots.append(n)
         if len(closeSpots) >= len(neighbours):
             neighbours = closeSpots
             bestSpot = spot
     neighbours.append(bestSpot)
 
-    return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), neighbours))})
+    viewPointsInfo = []
+
+    for v in neighbours:
+        info = ViewPointInfo(ID=v.ID, type=v.type, title=v.title, numberOfRatings=v.numberOfRatings, rating=v.rating, lat=v.lat, long=v.long)
+        viewPointsInfo.append(info)
+
+    return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), viewPointsInfo))})
 
 
 @app.route('/distance', methods=['GET'])
@@ -207,6 +230,80 @@ def dist():
                 print(s.title)
                 print(vincenty(cooS, cooVP).m)
                 print("----------------------")
-
     return "hello"
 
+
+@app.route('/getViewPointInfo', methods=['GET'])
+def getViewPointInfo():
+
+    viewPoints = ViewPoint.query.all()
+    viewPointsInfo = []
+
+    for vp in viewPoints:
+        v = ViewPointInfo(ID=vp.ID, type=vp.type, title=vp.title, numberOfRatings=vp.numberOfRatings, rating=vp.rating, lat=vp.lat, long=vp.long)
+        viewPointsInfo.append(v)
+
+    viewPointsInfo.sort(key=returnName, reverse=True)
+
+    return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), viewPointsInfo))})
+
+
+def returnName(vp):
+    return vp.rating
+
+
+@app.route('/getWalk', methods=['POST'])
+def getWalk():
+    data = request.get_json()
+
+    radius = float(data["radius"])
+    lat = float(data["latitude"])
+    long = float(data["longitude"])
+    rating = int(data["rating"])
+
+    type = data['type']
+
+    currentCoordinate = (lat, long)
+    viewPoints = ViewPoint.query.all()
+
+    walkingPoints = []
+
+    for vp in viewPoints:
+        vpCoordinate = (vp.lat, vp.long)
+        if type == 'Godt og blandet':
+            if vincenty(currentCoordinate, vpCoordinate) <= radius and vp.rating >= rating:
+                walkingPoints.append(vp)
+        else:
+            if vincenty(currentCoordinate, vpCoordinate) <= radius and vp.rating >= rating and type == vp.type:
+                walkingPoints.append(vp)
+
+    infoPoints = []
+
+    for v in walkingPoints:
+        v = ViewPointInfo(ID=v.ID, type=v.type, title=v.title, numberOfRatings=v.numberOfRatings, rating=v.rating, lat=v.lat, long=v.long)
+        infoPoints.append(v)
+
+    if len(infoPoints) == 0:
+        return jsonify({"viewPoints": False})
+
+    return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), infoPoints))})
+
+
+@app.route('/getType', methods=['POST'])
+def getType():
+    data = request.get_json()
+    viewPointType = data['type']
+
+    viewPoints = ViewPoint.query.all()
+
+    returnViewPoints = []
+
+    for vp in viewPoints:
+        if vp.type == viewPointType:
+            v = ViewPointInfo(ID=vp.ID, type=vp.viewPointType, title=vp.title, numberOfRatings=vp.numberOfRatings, rating=vp.rating, lat=vp.lat, long=vp.long)
+            returnViewPoints.append(v)
+
+    if len(returnViewPoints) == 0:
+        return jsonify({'completed': False})
+
+    return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), returnViewPoints))})

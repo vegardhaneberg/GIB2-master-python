@@ -14,34 +14,6 @@ too the flask framework, which will handle the database actions."""
 from app import db
 
 
-class Model(db.Model):
-    __tablename__ = 'Model'
-
-    ID = db.Column(db.Integer, primary_key=True, index=True)
-    title = db.Column(db.String)
-    description = db.Column(db.String)
-    startdate = db.Column(db.TIMESTAMP)
-    enddate = db.Column(db.TIMESTAMP)
-
-    def __init__(self, title, description, startdate, enddate):
-        self.title = title
-        self.description = description
-        self.startdate = startdate
-        self.enddate = enddate
-
-    def __repr__(self):
-        return '<ID {}>'.format(self.ID)
-
-    def serialize(self):
-        return {
-            'ID': self.ID,
-            'title': self.title,
-            'description': self.description,
-            'startdate': self.startdate,
-            'enddate': self.enddate,
-        }
-
-
 class ViewPoint(db.Model):
     __tablename__ = 'ViewPoint'
 
@@ -49,19 +21,19 @@ class ViewPoint(db.Model):
     title = db.Column(db.String)
     lat = db.Column(db.Float)
     long = db.Column(db.Float)
-    date = db.Column(db.TIMESTAMP)
     rating = db.Column(db.Float)
     image = db.Column(db.String)
     numberOfRatings = db.Column(db.Integer)
+    type = db.Column(db.String)
 
-    def __init__(self, title, lat, long, date=None, image=None):
+    def __init__(self, title, lat, long, type, image=None):
         self.title = title
         self.lat = lat
         self.long = long
-        self.date = date
         self.image = image
         self.rating = 0
         self.numberOfRatings = 0
+        self.type = type
 
     def __repr__(self):
         return '<ID {}>'.format(self.ID)
@@ -72,8 +44,43 @@ class ViewPoint(db.Model):
             'title': self.title,
             'lat': self.lat,
             'long': self.long,
-            'date': self.date,
-            'image_name': self.image,
             'rating': self.rating,
-            'numberOfRatings': self.numberOfRatings
+            'numberOfRatings': self.numberOfRatings,
+            'type': self.type,
+            'image_name': self.image
         }
+
+
+class ViewPointInfo():
+
+    ID = 1
+    title = "hei"
+    lat = 432
+    long = 432
+    rating = 3
+    numberOfRatings = 1
+    type = 'Natur'
+
+    def __init__(self, ID, title, lat, long, rating, numberOfRatings, type):
+        self.ID = ID
+        self.title = title
+        self.lat = lat
+        self.long = long
+        self.rating = rating
+        self.numberOfRatings = numberOfRatings
+        self.type = type
+
+    def __repr__(self):
+        return '<id {}>'.format(self.ID)
+
+    def serialize(self):
+        return {
+            'ID': self.ID,
+            'title': self.title,
+            'lat': self.lat,
+            'long': self.long,
+            'rating': self.rating,
+            'numberOfRatings': self.numberOfRatings,
+            'type': self.type,
+        }
+
