@@ -9,7 +9,6 @@ from flask import render_template, request, jsonify
 from app import app, db
 from app.models import ViewPoint, ViewPointInfo
 from geopy.distance import vincenty
-import base64
 
 
 @app.route('/create')
@@ -22,9 +21,10 @@ def finish():
     lat = request.form['lat']
     long = request.form['long']
     title = request.form['title']
+    altitude = request.form['altitude']
     viewPointType = request.form['type']
 
-    vp = ViewPoint(title=title, lat=lat, long=long, type=viewPointType)
+    vp = ViewPoint(title=title, lat=lat, long=long, altitude=altitude, type=viewPointType)
 
     db.session.add(vp)
     db.session.commit()
@@ -38,9 +38,10 @@ def deleteAll():
     db.session.commit()
     return str(i)
 
+
 @app.route('/delete', methods=['DELETE', 'GET'])
 def delete():
-    vp = db.session.query(ViewPoint).filter(ViewPoint.ID == 70).first()
+    vp = db.session.query(ViewPoint).filter(ViewPoint.ID == 104).first()
     if type(vp) is ViewPoint:
         db.session.delete(vp)
         db.session.commit()
@@ -85,6 +86,7 @@ def postjson():
     title = data["title"]
     lat = float(data["latitude"])
     long = float(data["longitude"])
+    altitude = float(data['altitude'])
     viewPointType = data['type']
 
     if data['image']:
@@ -92,7 +94,7 @@ def postjson():
     else:
         image = None
 
-    spot = ViewPoint(title=title, lat=lat, long=long, image=image, type=viewPointType)
+    spot = ViewPoint(title=title, lat=lat, long=long, altitude=altitude, image=image, type=viewPointType)
 
     db.session.add(spot)
     db.session.commit()
@@ -211,7 +213,7 @@ def clusterViewPoints():
     viewPointsInfo = []
 
     for v in neighbours:
-        info = ViewPointInfo(ID=v.ID, type=v.type, title=v.title, numberOfRatings=v.numberOfRatings, rating=v.rating, lat=v.lat, long=v.long)
+        info = ViewPointInfo(ID=v.ID, type=v.type, title=v.title, altitude=v.altitude, numberOfRatings=v.numberOfRatings, rating=v.rating, lat=v.lat, long=v.long)
         viewPointsInfo.append(info)
 
     return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), viewPointsInfo))})
@@ -240,7 +242,7 @@ def getViewPointInfo():
     viewPointsInfo = []
 
     for vp in viewPoints:
-        v = ViewPointInfo(ID=vp.ID, type=vp.type, title=vp.title, numberOfRatings=vp.numberOfRatings, rating=vp.rating, lat=vp.lat, long=vp.long)
+        v = ViewPointInfo(ID=vp.ID, type=vp.type, title=vp.title, altitude=vp.altitude, numberOfRatings=vp.numberOfRatings, rating=vp.rating, lat=vp.lat, long=vp.long)
         viewPointsInfo.append(v)
 
     viewPointsInfo.sort(key=returnName, reverse=True)
@@ -280,7 +282,7 @@ def getWalk():
     infoPoints = []
 
     for v in walkingPoints:
-        v = ViewPointInfo(ID=v.ID, type=v.type, title=v.title, numberOfRatings=v.numberOfRatings, rating=v.rating, lat=v.lat, long=v.long)
+        v = ViewPointInfo(ID=v.ID, type=v.type, title=v.title, altitude=v.altitude, numberOfRatings=v.numberOfRatings, rating=v.rating, lat=v.lat, long=v.long)
         infoPoints.append(v)
 
     if len(infoPoints) == 0:
@@ -300,10 +302,67 @@ def getType():
 
     for vp in viewPoints:
         if vp.type == viewPointType:
-            v = ViewPointInfo(ID=vp.ID, type=vp.viewPointType, title=vp.title, numberOfRatings=vp.numberOfRatings, rating=vp.rating, lat=vp.lat, long=vp.long)
+            v = ViewPointInfo(ID=vp.ID, type=vp.viewPointType, altitude=vp.altitude, title=vp.title, numberOfRatings=vp.numberOfRatings, rating=vp.rating, lat=vp.lat, long=vp.long)
             returnViewPoints.append(v)
 
     if len(returnViewPoints) == 0:
         return jsonify({'completed': False})
 
     return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), returnViewPoints))})
+
+
+@app.route('/lazyWalk', methods=['POST'])
+def lazyWalk():
+
+    data = request.get_json()
+    lat = float(data["latitude"])
+    long = float(data["longitude"])
+    altitude = float(data['altitude'])
+    styrke = data['styrke']
+    type = data['type']
+    rating = int(data['rating'])
+    myCoordinate = (lat, long)
+    scale = 0
+
+    if styrke == 'Lett':
+        scale = 3
+    elif styrke == 'Medium':
+        scale = 5
+    else:
+        scale = 7
+
+    viewPoints1 = ViewPoint.query.all()
+    viewPoints = []
+
+    for v in viewPoints1:
+        if type == 'Godt og blandet' and v.rating >= rating:
+            viewPoints.append(v)
+        elif v.type == type and v.rating >= rating:
+            viewPoints.append(v)
+
+    if len(viewPoints) == 0:
+        return jsonify({"viewPoints": False})
+
+    firstCoordinate = (viewPoints[0].lat, viewPoints[0].long)
+
+    bestSpot = viewPoints[0]
+    bestScore = abs(altitude - viewPoints[0].altitude) * scale + vincenty(myCoordinate, firstCoordinate).m
+
+    for vp in viewPoints:
+        if vp != viewPoints[0]:
+            vpCoordinate = (vp.lat, vp.long)
+            vpAltitude = vp.altitude
+
+            if abs(altitude - vpAltitude) * scale + vincenty(myCoordinate, vpCoordinate).m < bestScore:
+                bestSpot = vp
+                bestScore = abs(altitude - vpAltitude) * scale + vincenty(myCoordinate, vpCoordinate).m
+
+    infoPoint = ViewPointInfo(ID=bestSpot.ID, type=bestSpot.type, altitude=bestSpot.altitude, title=bestSpot.title, numberOfRatings=bestSpot.numberOfRatings, rating=bestSpot.rating, lat=bestSpot.lat, long=bestSpot.long)
+
+    viewPointList = [infoPoint]
+
+    return jsonify({"viewPoints": list(map(lambda vp: vp.serialize(), viewPointList))})
+
+
+
+

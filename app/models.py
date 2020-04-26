@@ -21,12 +21,13 @@ class ViewPoint(db.Model):
     title = db.Column(db.String)
     lat = db.Column(db.Float)
     long = db.Column(db.Float)
+    altitude = db.Column(db.Float)
     rating = db.Column(db.Float)
     image = db.Column(db.String)
     numberOfRatings = db.Column(db.Integer)
     type = db.Column(db.String)
 
-    def __init__(self, title, lat, long, type, image=None):
+    def __init__(self, title, lat, long, type, altitude, image=None):
         self.title = title
         self.lat = lat
         self.long = long
@@ -34,6 +35,7 @@ class ViewPoint(db.Model):
         self.rating = 0
         self.numberOfRatings = 0
         self.type = type
+        self.altitude = altitude
 
     def __repr__(self):
         return '<ID {}>'.format(self.ID)
@@ -47,7 +49,8 @@ class ViewPoint(db.Model):
             'rating': self.rating,
             'numberOfRatings': self.numberOfRatings,
             'type': self.type,
-            'image_name': self.image
+            'image_name': self.image,
+            'altitude': self.altitude
         }
 
 
@@ -60,8 +63,9 @@ class ViewPointInfo():
     rating = 3
     numberOfRatings = 1
     type = 'Natur'
+    altitude = 1
 
-    def __init__(self, ID, title, lat, long, rating, numberOfRatings, type):
+    def __init__(self, ID, title, lat, long, rating, altitude, numberOfRatings, type):
         self.ID = ID
         self.title = title
         self.lat = lat
@@ -69,6 +73,7 @@ class ViewPointInfo():
         self.rating = rating
         self.numberOfRatings = numberOfRatings
         self.type = type
+        self.altitude = altitude
 
     def __repr__(self):
         return '<id {}>'.format(self.ID)
@@ -82,5 +87,6 @@ class ViewPointInfo():
             'rating': self.rating,
             'numberOfRatings': self.numberOfRatings,
             'type': self.type,
+            'altitude': self.altitude
         }
 
