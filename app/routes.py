@@ -82,7 +82,6 @@ def postjson():
 
     data = request.get_json()
 
-
     title = data["title"]
     lat = float(data["latitude"])
     long = float(data["longitude"])
