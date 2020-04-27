@@ -208,10 +208,10 @@ def clusterViewPoints():
     for vp in viewPoints:
         coordinateVP = (vp.lat, vp.long)
         if type == "Godt og blandet":
-            if vincenty(currentCoordinate, coordinateVP).km <= radius + distance:
+            if vincenty(currentCoordinate, coordinateVP).km <= (radius + distance):
                 validViewPoints.append(vp)
         else:
-            if vincenty(currentCoordinate, coordinateVP).km <= radius + distance and type == vp.type:
+            if vincenty(currentCoordinate, coordinateVP).km <= (radius + distance) and type == vp.type:
                 validViewPoints.append(vp)
 
     if len(validViewPoints) == 0:
@@ -224,9 +224,9 @@ def clusterViewPoints():
         closeSpots = []
         coordinateSpot = (spot.lat, spot.long)
         for n in validViewPoints:
-
             coordinateN = (n.lat, n.long)
-            if spot.ID != n.ID and vincenty(coordinateSpot, coordinateN).km < distance:
+
+            if spot.ID != n.ID and vincenty(coordinateSpot, coordinateN).km < radius:
                 closeSpots.append(n)
         if len(closeSpots) >= len(neighbours):
             neighbours = closeSpots
