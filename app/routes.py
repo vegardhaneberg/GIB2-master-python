@@ -13,11 +13,19 @@ from geopy.distance import vincenty
 
 @app.route('/create')
 def create():
+    """
+    Method for creating a spot in the web browser. Only used for testing.
+    :return: A HTML file.
+    """
     return render_template('create.html')
 
 
 @app.route('/finish', methods=['POST'])
 def finish():
+    """
+    Method for storing dummy data in the database. Only used for testing.
+    :return: A string saying the insertion in the database was a success.
+    """
     lat = request.form['lat']
     long = request.form['long']
     title = request.form['title']
@@ -34,6 +42,10 @@ def finish():
 
 @app.route('/deleteAll', methods=['DELETE'])
 def deleteAll():
+    """
+    Method for deleting all rows in the database. Only used for testing.
+    :return: number of rows deleted
+    """
     i = db.session.query(ViewPoint).delete()
     db.session.commit()
     return str(i)
@@ -41,7 +53,11 @@ def deleteAll():
 
 @app.route('/delete', methods=['DELETE', 'GET'])
 def delete():
-    vp = db.session.query(ViewPoint).filter(ViewPoint.ID == 104).first()
+    """
+    Method for deleting a spot in the database. Only used for testing
+    :return: either a success message og a failure message.
+    """
+    vp = db.session.query(ViewPoint).filter(ViewPoint.ID == 148).first()
     if type(vp) is ViewPoint:
         db.session.delete(vp)
         db.session.commit()
@@ -51,6 +67,10 @@ def delete():
 
 @app.route('/changeRating', methods=['PUT'])
 def changeRating():
+    """
+    Method for changing a spots rating in the database. Gets a json object with the ID of the spot
+    :return: a json object with the new rating and the new number of ratings or a failure message.
+    """
     data = request.get_json()
 
     id = data["id"]
@@ -120,6 +140,10 @@ def upload_image():
 
 @app.route('/getViewPoint', methods=['POST'])
 def getViewPoint():
+    """
+    Function for getting a spot from the database based on the ID.
+    :return: A json object with the spot or a failure message
+    """
 
     data = request.get_json()
     id = int(data['id'])
@@ -220,6 +244,10 @@ def clusterViewPoints():
 
 @app.route('/distance', methods=['GET'])
 def dist():
+    """
+    A method for getting the distance between all the spots in the database. Only used for testing
+    :return: A string saying the method is done.
+    """
     viewPoints = ViewPoint.query.all()
 
     for vp in viewPoints:
@@ -231,12 +259,15 @@ def dist():
                 print(s.title)
                 print(vincenty(cooS, cooVP).m)
                 print("----------------------")
-    return "hello"
+    return "Done"
 
 
 @app.route('/getViewPointInfo', methods=['GET'])
 def getViewPointInfo():
-
+    """
+    A method for getting all the spots in the database without the image.
+    :return: a json object containing all the spots in the database, without the image.
+    """
     viewPoints = ViewPoint.query.all()
     viewPointsInfo = []
 
@@ -250,11 +281,20 @@ def getViewPointInfo():
 
 
 def returnName(vp):
+    """
+    Helping method used to sort the list of all spots in the database based on rating.
+    :param vp: the spot
+    :return: the raitng of the spot
+    """
     return vp.rating
 
 
 @app.route('/getWalk', methods=['POST'])
 def getWalk():
+    """
+    A method for finding the best walk given all the spots in the database, within a user given radius.
+    :return: A json object containing all the spots that satisfy the user criterias
+    """
     data = request.get_json()
 
     radius = float(data["radius"])
@@ -292,6 +332,10 @@ def getWalk():
 
 @app.route('/getType', methods=['POST'])
 def getType():
+    """
+    A method that returns all the spots in the database given a type.
+    :return: a json object with all the spots that are of one type.
+    """
     data = request.get_json()
     viewPointType = data['type']
 
@@ -312,6 +356,11 @@ def getType():
 
 @app.route('/lazyWalk', methods=['POST'])
 def lazyWalk():
+    """
+    A method for getting the best spot from the database given user criteria. The result is based on altitude
+    and distance.
+    :return: a json object with the best spot.
+    """
 
     data = request.get_json()
     lat = float(data["latitude"])
@@ -323,9 +372,9 @@ def lazyWalk():
     myCoordinate = (lat, long)
     scale = 0
 
-    if styrke == 'Lett':
+    if styrke == 'Lengde':
         scale = 3
-    elif styrke == 'Medium':
+    elif styrke == 'Begge':
         scale = 5
     else:
         scale = 7
