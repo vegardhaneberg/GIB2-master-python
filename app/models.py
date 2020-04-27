@@ -15,6 +15,9 @@ from app import db
 
 
 class ViewPoint(db.Model):
+    """
+    The model of a spot in the database, containing all the relevant fields.
+    """
     __tablename__ = 'ViewPoint'
 
     ID = db.Column(db.Integer, primary_key=True, index=True)
@@ -55,11 +58,14 @@ class ViewPoint(db.Model):
 
 
 class ViewPointInfo():
+    """
+    A method for a spot without the image. Used to increase the performance of the app.
+    """
 
     ID = 1
-    title = "hei"
-    lat = 432
-    long = 432
+    title = ""
+    lat = 1
+    long = 1
     rating = 3
     numberOfRatings = 1
     type = 'Natur'
