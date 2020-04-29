@@ -293,7 +293,7 @@ def returnName(vp):
 def getWalk():
     """
     A method for finding the best walk given all the spots in the database, within a user given radius.
-    :return: A json object containing all the spots that satisfy the user criterias
+    :return: A json object containing all the spots that satisfy the user criteria
     """
     data = request.get_json()
 
@@ -375,9 +375,9 @@ def lazyWalk():
     if styrke == 'Lengde':
         scale = 3
     elif styrke == 'Begge':
-        scale = 5
-    else:
         scale = 7
+    else:
+        scale = 12
 
     viewPoints1 = ViewPoint.query.all()
     viewPoints = []
